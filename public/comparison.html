@@ -1,0 +1,414 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>WebSocket vs HTTP 轮询 对比演示</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+
+<!-- 导航栏 -->
+<nav class="navbar">
+  <span class="logo">⚡ WebSocket Demo</span>
+  <a href="/">首页</a>
+  <a href="/chat.html">聊天室</a>
+  <a href="/comparison.html" class="active">协议对比</a>
+</nav>
+
+<div class="container">
+  <h2 style="font-size:1.4rem; font-weight:700; color:#1e1b4b; margin-bottom:0.5rem;">
+    📊 WebSocket vs HTTP 轮询 — 实时对比
+  </h2>
+  <p style="color:#6b7280; margin-bottom:1.5rem; font-size:0.9rem;">
+    同样是"每秒获取最新服务器时间"，左边用 WebSocket（服务器主动推），右边用 HTTP 轮询（客户端反复问）。观察两者的请求次数与网络开销差异。
+  </p>
+
+  <!-- 控制按钮 -->
+  <div style="display:flex; gap:1rem; margin-bottom:1.5rem; flex-wrap:wrap; align-items:center;">
+    <button id="startBtn" class="btn btn-success" onclick="startBoth()">▶ 开始对比</button>
+    <button id="stopBtn" class="btn btn-danger" onclick="stopBoth()" disabled>⏹ 停止</button>
+    <button class="btn btn-outline" onclick="resetAll()">🔄 重置统计</button>
+    <span style="font-size:0.85rem; color:#6b7280; align-self:center;">
+      运行 30 秒后观察统计数据差异
+    </span>
+  </div>
+
+  <!-- 左右对比面板 -->
+  <div class="compare-grid">
+
+    <!-- WebSocket 面板 -->
+    <div class="panel-ws">
+      <div class="card">
+        <div class="card-header">
+          <span style="font-size:1.2rem;">⚡</span>
+          <span class="card-title" style="color:#065f46;">WebSocket（服务器主动推送）</span>
+          <div id="wsBadge" class="badge disconnected" style="margin-left:auto;">
+            <span class="dot pulse"></span>未连接
+          </div>
+        </div>
+        <div class="card-body">
+
+          <!-- 实时时间展示 -->
+          <div style="text-align:center; padding:1rem 0; border-bottom:1px solid #a7f3d0; margin-bottom:1rem;">
+            <div style="font-size:0.8rem; color:#6b7280; margin-bottom:0.3rem;">服务器当前时间</div>
+            <div id="wsTime" style="font-size:2.5rem; font-weight:700; color:#065f46; font-family:monospace;">
+              --:--:--
+            </div>
+            <div id="wsLatency" style="font-size:0.8rem; color:#10b981; margin-top:0.3rem;">等待数据...</div>
+          </div>
+
+          <!-- 统计 -->
+          <div class="stat-grid" style="margin-bottom:1rem;">
+            <div class="stat-item" style="background:#ecfdf5;">
+              <div id="wsConnCount" class="stat-value" style="color:#10b981;">0</div>
+              <div class="stat-label">建立连接次数</div>
+            </div>
+            <div class="stat-item" style="background:#ecfdf5;">
+              <div id="wsMsgCount" class="stat-value" style="color:#10b981;">0</div>
+              <div class="stat-label">收到推送次数</div>
+            </div>
+            <div class="stat-item" style="background:#ecfdf5;">
+              <div id="wsBytesSaved" class="stat-value" style="color:#10b981;">0</div>
+              <div class="stat-label">数据帧（字节）</div>
+            </div>
+          </div>
+
+          <!-- 工作日志 -->
+          <div id="wsLog" class="log-area" style="height:200px;"></div>
+
+          <div style="margin-top:0.75rem; background:#ecfdf5; border-radius:8px; padding:0.75rem; font-size:0.82rem; color:#065f46;">
+            💡 <strong>原理：</strong>连接建立一次，服务器每秒主动推送数据帧（仅 ~50 字节）。
+            无需客户端请求。
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- HTTP 轮询面板 -->
+    <div class="panel-http">
+      <div class="card">
+        <div class="card-header">
+          <span style="font-size:1.2rem;">🔄</span>
+          <span class="card-title" style="color:#78350f;">HTTP 轮询（客户端反复请求）</span>
+          <div id="httpBadge" class="badge disconnected" style="margin-left:auto;">
+            <span class="dot pulse"></span>未启动
+          </div>
+        </div>
+        <div class="card-body">
+
+          <!-- 实时时间展示 -->
+          <div style="text-align:center; padding:1rem 0; border-bottom:1px solid #fde68a; margin-bottom:1rem;">
+            <div style="font-size:0.8rem; color:#6b7280; margin-bottom:0.3rem;">服务器当前时间</div>
+            <div id="httpTime" style="font-size:2.5rem; font-weight:700; color:#78350f; font-family:monospace;">
+              --:--:--
+            </div>
+            <div id="httpLatency" style="font-size:0.8rem; color:#f59e0b; margin-top:0.3rem;">等待数据...</div>
+          </div>
+
+          <!-- 统计 -->
+          <div class="stat-grid" style="margin-bottom:1rem;">
+            <div class="stat-item" style="background:#fffbeb;">
+              <div id="httpReqCount" class="stat-value" style="color:#f59e0b;">0</div>
+              <div class="stat-label">HTTP 请求次数</div>
+            </div>
+            <div class="stat-item" style="background:#fffbeb;">
+              <div id="httpBytes" class="stat-value" style="color:#f59e0b;">0</div>
+              <div class="stat-label">请求字节（估算）</div>
+            </div>
+            <div class="stat-item" style="background:#fffbeb;">
+              <div id="httpAvgLatency" class="stat-value" style="color:#f59e0b;">0ms</div>
+              <div class="stat-label">平均响应时间</div>
+            </div>
+          </div>
+
+          <!-- 工作日志 -->
+          <div id="httpLog" class="log-area" style="height:200px;"></div>
+
+          <div style="margin-top:0.75rem; background:#fffbeb; border-radius:8px; padding:0.75rem; font-size:0.82rem; color:#78350f;">
+            💡 <strong>原理：</strong>每 1 秒发出一个 HTTP GET 请求，带完整请求头（~400 字节），
+            等待响应后再发下一次。
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- 效率对比图表 -->
+  <div class="card" style="margin-top:1.5rem;">
+    <div class="card-header">
+      <span>📉</span>
+      <span class="card-title">累计网络流量对比</span>
+    </div>
+    <div class="card-body">
+      <div style="display:flex; gap:2rem; flex-wrap:wrap; margin-bottom:1rem;">
+        <div>
+          <span style="display:inline-block;width:12px;height:12px;background:#10b981;border-radius:3px;margin-right:6px;"></span>
+          <span style="font-size:0.85rem;">WebSocket 累计（字节）</span>
+        </div>
+        <div>
+          <span style="display:inline-block;width:12px;height:12px;background:#f59e0b;border-radius:3px;margin-right:6px;"></span>
+          <span style="font-size:0.85rem;">HTTP 轮询累计（字节）</span>
+        </div>
+      </div>
+      <!-- 简单柱状图 -->
+      <div style="background:#f8fafc; border-radius:8px; padding:1rem;">
+        <div style="display:flex; align-items:center; gap:1rem; margin-bottom:0.75rem;">
+          <div style="width:80px; font-size:0.8rem; color:#6b7280;">WebSocket</div>
+          <div style="flex:1; background:#e5e7eb; border-radius:4px; height:28px; overflow:hidden;">
+            <div id="wsBar" style="height:100%; background:#10b981; border-radius:4px; width:0%; transition:width 0.5s; display:flex; align-items:center; padding-left:8px; font-size:0.75rem; color:white; font-weight:600;"></div>
+          </div>
+          <div id="wsTotalBytes" style="width:80px; font-size:0.85rem; text-align:right; color:#10b981; font-weight:600;">0 B</div>
+        </div>
+        <div style="display:flex; align-items:center; gap:1rem;">
+          <div style="width:80px; font-size:0.8rem; color:#6b7280;">HTTP 轮询</div>
+          <div style="flex:1; background:#e5e7eb; border-radius:4px; height:28px; overflow:hidden;">
+            <div id="httpBar" style="height:100%; background:#f59e0b; border-radius:4px; width:0%; transition:width 0.5s; display:flex; align-items:center; padding-left:8px; font-size:0.75rem; color:white; font-weight:600;"></div>
+          </div>
+          <div id="httpTotalBytes" style="width:80px; font-size:0.85rem; text-align:right; color:#f59e0b; font-weight:600;">0 B</div>
+        </div>
+      </div>
+
+      <!-- 结论 -->
+      <div id="conclusion" style="display:none; margin-top:1rem; padding:1rem; background:#eff6ff; border-radius:8px; border-left:4px solid #4f46e5;">
+        <strong style="color:#1e40af;">📌 结论：</strong>
+        <span id="conclusionText" style="color:#1e40af; font-size:0.9rem;"></span>
+      </div>
+    </div>
+  </div>
+
+  <!-- 关键区别总结 -->
+  <div class="card" style="margin-top:1.5rem; margin-bottom:2rem;">
+    <div class="card-header">
+      <span>🔑</span>
+      <span class="card-title">核心区别一览</span>
+    </div>
+    <div class="card-body">
+      <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(280px,1fr)); gap:1.25rem; font-size:0.88rem;">
+
+        <div style="border:1px solid #a7f3d0; border-radius:8px; padding:1rem; background:#f0fdf4;">
+          <div style="font-weight:700; color:#065f46; margin-bottom:0.5rem;">✅ WebSocket 优势</div>
+          <ul style="padding-left:1.2rem; color:#166534; line-height:2;">
+            <li>服务器可以<strong>主动推送</strong>，真正的实时</li>
+            <li>连接建立后数据帧<strong>开销极小</strong>（2-10 字节头）</li>
+            <li>无需重复握手，<strong>延迟极低</strong></li>
+            <li>全双工：<strong>同时收发</strong>，不互相阻塞</li>
+          </ul>
+        </div>
+
+        <div style="border:1px solid #fde68a; border-radius:8px; padding:1rem; background:#fffbeb;">
+          <div style="font-weight:700; color:#78350f; margin-bottom:0.5rem;">⚠️ HTTP 轮询的代价</div>
+          <ul style="padding-left:1.2rem; color:#92400e; line-height:2;">
+            <li>每次请求都带 <strong>400+ 字节 HTTP 头</strong></li>
+            <li>需要客户端<strong>主动发起</strong>，有延迟盲区</li>
+            <li>每次 TCP 连接建立/断开都有<strong>握手开销</strong></li>
+            <li>服务端压力随轮询频率<strong>线性增长</strong></li>
+          </ul>
+        </div>
+
+        <div style="border:1px solid #dbeafe; border-radius:8px; padding:1rem; background:#eff6ff;">
+          <div style="font-weight:700; color:#1e40af; margin-bottom:0.5rem;">📖 何时用哪个？</div>
+          <ul style="padding-left:1.2rem; color:#1e40af; line-height:2;">
+            <li><strong>WebSocket</strong>：聊天、游戏、实时协作、股票</li>
+            <li><strong>HTTP 轮询</strong>：低频数据查询、简单状态检查</li>
+            <li><strong>SSE</strong>：单向推送、日志流、AI 流式输出</li>
+            <li><strong>REST HTTP</strong>：无状态 CRUD 操作</li>
+          </ul>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+  // ── 状态变量 ──────────────────────────────────────────────
+  let ws = null;
+  let httpTimer = null;
+  let running = false;
+
+  let wsConnCount = 0;
+  let wsMsgCount = 0;
+  let wsBytesTotal = 0;
+
+  let httpReqCount = 0;
+  let httpBytesTotal = 0;
+  let httpLatencySum = 0;
+  const HTTP_HEADER_BYTES = 420; // 估算每次请求的 HTTP 头大小
+  const WS_FRAME_BYTES = 52;     // 估算每条 WS 帧大小
+
+  // ── WebSocket 推送日志 ────────────────────────────────────
+  function wsLog(msg, cls = 'type-server') {
+    const log = document.getElementById('wsLog');
+    const line = document.createElement('div');
+    line.className = `log-line ${cls}`;
+    line.textContent = msg;
+    log.appendChild(line);
+    log.scrollTop = log.scrollHeight;
+    while (log.children.length > 60) log.removeChild(log.firstChild);
+  }
+
+  function httpLog(msg, cls = 'type-http') {
+    const log = document.getElementById('httpLog');
+    const line = document.createElement('div');
+    line.className = `log-line ${cls}`;
+    line.textContent = msg;
+    log.appendChild(line);
+    log.scrollTop = log.scrollHeight;
+    while (log.children.length > 60) log.removeChild(log.firstChild);
+  }
+
+  // ── 启动 ──────────────────────────────────────────────────
+  function startBoth() {
+    if (running) return;
+    running = true;
+    document.getElementById('startBtn').disabled = true;
+    document.getElementById('stopBtn').disabled = false;
+    startWS();
+    startHTTP();
+  }
+
+  function stopBoth() {
+    running = false;
+    document.getElementById('startBtn').disabled = false;
+    document.getElementById('stopBtn').disabled = true;
+    if (ws) { ws.close(); ws = null; }
+    if (httpTimer) { clearInterval(httpTimer); httpTimer = null; }
+    document.getElementById('wsBadge').className = 'badge disconnected';
+    document.getElementById('wsBadge').innerHTML = '<span class="dot"></span>已停止';
+    document.getElementById('httpBadge').className = 'badge disconnected';
+    document.getElementById('httpBadge').innerHTML = '<span class="dot"></span>已停止';
+    updateChart();
+  }
+
+  function resetAll() {
+    stopBoth();
+    wsConnCount = 0; wsMsgCount = 0; wsBytesTotal = 0;
+    httpReqCount = 0; httpBytesTotal = 0; httpLatencySum = 0;
+    document.getElementById('wsConnCount').textContent = 0;
+    document.getElementById('wsMsgCount').textContent = 0;
+    document.getElementById('wsBytesSaved').textContent = 0;
+    document.getElementById('httpReqCount').textContent = 0;
+    document.getElementById('httpBytes').textContent = 0;
+    document.getElementById('httpAvgLatency').textContent = '0ms';
+    document.getElementById('wsTime').textContent = '--:--:--';
+    document.getElementById('httpTime').textContent = '--:--:--';
+    document.getElementById('wsLatency').textContent = '等待数据...';
+    document.getElementById('httpLatency').textContent = '等待数据...';
+    document.getElementById('wsLog').innerHTML = '';
+    document.getElementById('httpLog').innerHTML = '';
+    document.getElementById('wsBar').style.width = '0%';
+    document.getElementById('httpBar').style.width = '0%';
+    document.getElementById('wsTotalBytes').textContent = '0 B';
+    document.getElementById('httpTotalBytes').textContent = '0 B';
+    document.getElementById('conclusion').style.display = 'none';
+  }
+
+  // ── WebSocket ─────────────────────────────────────────────
+  function startWS() {
+    const wsUrl = `ws://${location.host}`;
+    wsConnCount++;
+    document.getElementById('wsConnCount').textContent = wsConnCount;
+
+    ws = new WebSocket(wsUrl);
+
+    document.getElementById('wsBadge').className = 'badge connecting';
+    document.getElementById('wsBadge').innerHTML = '<span class="dot pulse"></span>连接中...';
+
+    ws.onopen = () => {
+      document.getElementById('wsBadge').className = 'badge connected';
+      document.getElementById('wsBadge').innerHTML = '<span class="dot pulse"></span>已连接';
+      wsLog(`[连接建立] 握手完成，仅此一次。后续无需再次握手。`, 'type-system');
+    };
+
+    ws.onmessage = (event) => {
+      const data = JSON.parse(event.data);
+      if (data.type === 'server-push') {
+        wsMsgCount++;
+        wsBytesTotal += WS_FRAME_BYTES;
+        const latency = Date.now() - data.timestamp;
+        document.getElementById('wsMsgCount').textContent = wsMsgCount;
+        document.getElementById('wsBytesSaved').textContent = wsBytesTotal;
+        document.getElementById('wsTime').textContent = data.time;
+        document.getElementById('wsLatency').textContent = `传输延迟 ≈ ${latency}ms | 本帧约 ${WS_FRAME_BYTES} 字节`;
+        wsLog(`[服务器推送 #${wsMsgCount}] 时间: ${data.time} | 帧大小: ~${WS_FRAME_BYTES}B | 延迟: ${latency}ms`, 'type-server');
+        updateChart();
+      }
+    };
+
+    ws.onclose = () => {
+      if (running) {
+        wsLog('[连接关闭] 尝试重连...', 'type-error');
+        setTimeout(() => { if (running) startWS(); }, 1000);
+      }
+    };
+  }
+
+  // ── HTTP 轮询 ─────────────────────────────────────────────
+  function startHTTP() {
+    document.getElementById('httpBadge').className = 'badge connecting';
+    document.getElementById('httpBadge').innerHTML = '<span class="dot pulse"></span>轮询中';
+
+    httpTimer = setInterval(async () => {
+      if (!running) return;
+      const startTime = Date.now();
+      httpReqCount++;
+      httpBytesTotal += HTTP_HEADER_BYTES;
+
+      httpLog(`[HTTP 请求 #${httpReqCount}] GET /api/time → 发送请求头 ~${HTTP_HEADER_BYTES}B...`, 'type-http');
+
+      try {
+        const res = await fetch('/api/time');
+        const data = await res.json();
+        const latency = Date.now() - startTime;
+        httpLatencySum += latency;
+        const avgLatency = Math.round(httpLatencySum / httpReqCount);
+
+        document.getElementById('httpReqCount').textContent = httpReqCount;
+        document.getElementById('httpBytes').textContent = httpBytesTotal;
+        document.getElementById('httpAvgLatency').textContent = `${avgLatency}ms`;
+        document.getElementById('httpTime').textContent = data.time;
+        document.getElementById('httpLatency').textContent = `响应时间 ${latency}ms | 本次请求 ~${HTTP_HEADER_BYTES}B`;
+        document.getElementById('httpBadge').className = 'badge connected';
+        document.getElementById('httpBadge').innerHTML = `<span class="dot pulse"></span>轮询中 (第 ${httpReqCount} 次)`;
+
+        httpLog(`[HTTP 响应 #${httpReqCount}] 时间: ${data.time} | 耗时: ${latency}ms | 累计请求: ${httpReqCount} 次`, 'type-http');
+        updateChart();
+      } catch (e) {
+        httpLog(`[错误] 请求失败: ${e.message}`, 'type-error');
+      }
+    }, 1000);
+  }
+
+  // ── 柱状图更新 ────────────────────────────────────────────
+  function updateChart() {
+    const maxBytes = Math.max(wsBytesTotal, httpBytesTotal, 1);
+    const wsPercent = (wsBytesTotal / maxBytes * 100).toFixed(1);
+    const httpPercent = (httpBytesTotal / maxBytes * 100).toFixed(1);
+
+    document.getElementById('wsBar').style.width = wsPercent + '%';
+    document.getElementById('httpBar').style.width = httpPercent + '%';
+    document.getElementById('wsTotalBytes').textContent = fmt(wsBytesTotal);
+    document.getElementById('httpTotalBytes').textContent = fmt(httpBytesTotal);
+
+    if (httpBytesTotal > 0 && wsBytesTotal > 0) {
+      const ratio = (httpBytesTotal / wsBytesTotal).toFixed(1);
+      const saved = httpBytesTotal - wsBytesTotal;
+      document.getElementById('conclusion').style.display = 'block';
+      document.getElementById('conclusionText').textContent =
+        `在同样的 ${wsMsgCount} 次数据更新中，HTTP 轮询消耗了约 ${fmt(httpBytesTotal)}，` +
+        `而 WebSocket 仅消耗约 ${fmt(wsBytesTotal)}。` +
+        `HTTP 轮询的流量是 WebSocket 的 ${ratio} 倍，多消耗了约 ${fmt(saved)}。`;
+    }
+  }
+
+  function fmt(bytes) {
+    if (bytes < 1024) return bytes + ' B';
+    return (bytes / 1024).toFixed(1) + ' KB';
+  }
+</script>
+
+</body>
+</html>
