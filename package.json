@@ -1,0 +1,13 @@
+{
+  "name": "websocket-demo",
+  "version": "1.0.0",
+  "description": "WebSocket Demo - 实时通信演示项目，对比 WebSocket 与 HTTP 轮询的区别",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js"
+  },
+  "dependencies": {
+    "ws": "^8.20.0"
+  }
+}

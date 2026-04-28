@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>WebSocket Demo - 首页</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+
+<!-- 导航栏 -->
+<nav class="navbar">
+  <span class="logo">⚡ WebSocket Demo</span>
+  <a href="/" class="active">首页</a>
+  <a href="/chat.html">聊天室</a>
+  <a href="/comparison.html">协议对比</a>
+</nav>
+
+<!-- 英雄区 -->
+<div class="hero">
+  <h1>⚡ WebSocket 是什么？</h1>
+  <p>WebSocket 是一种在单个 TCP 连接上进行全双工通信的网络协议。<br>
+     它让服务器能够<strong>主动推送</strong>数据给客户端，无需客户端反复询问。</p>
+  <div class="hero-links">
+    <a href="/chat.html" class="btn-hero-primary">💬 体验实时聊天室</a>
+    <a href="/comparison.html" class="btn-hero-outline">📊 WebSocket vs HTTP 对比</a>
+  </div>
+</div>
+
+<!-- 主内容 -->
+<div class="container">
+
+  <!-- 工作原理介绍 -->
+  <h2 style="font-size:1.5rem; font-weight:700; color:#1e1b4b; margin-bottom:1.5rem; margin-top:0.5rem;">
+    🔌 WebSocket 工作原理
+  </h2>
+
+  <div class="card" style="margin-bottom:2rem;">
+    <div class="card-body">
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:2rem; align-items:center;">
+        <div>
+          <h3 style="font-size:1rem; font-weight:600; margin-bottom:1rem; color:#4f46e5;">握手过程（Handshake）</h3>
+          <ol style="padding-left:1.5rem; font-size:0.9rem; color:#475569; line-height:2;">
+            <li>客户端发送 HTTP Upgrade 请求</li>
+            <li>服务器响应 <code style="background:#f1f5f9;padding:2px 6px;border-radius:4px;">101 Switching Protocols</code></li>
+            <li>协议从 HTTP 升级为 WebSocket</li>
+            <li>建立持久化的全双工连接</li>
+            <li>双方可以随时互相发送数据 🎉</li>
+          </ol>
+        </div>
+        <div style="background:#0f172a; border-radius:10px; padding:1.25rem; font-family:monospace; font-size:0.8rem; line-height:1.8;">
+          <div style="color:#64748b;">// 客户端发送升级请求</div>
+          <div style="color:#60a5fa;">GET /chat HTTP/1.1</div>
+          <div style="color:#60a5fa;">Upgrade: <span style="color:#34d399;">websocket</span></div>
+          <div style="color:#60a5fa;">Connection: <span style="color:#34d399;">Upgrade</span></div>
+          <div style="color:#60a5fa;">Sec-WebSocket-Key: dGhl...</div>
+          <br>
+          <div style="color:#64748b;">// 服务器响应</div>
+          <div style="color:#a78bfa;">HTTP/1.1 <span style="color:#34d399;">101</span> Switching Protocols</div>
+          <div style="color:#a78bfa;">Upgrade: <span style="color:#34d399;">websocket</span></div>
+          <div style="color:#a78bfa;">Connection: <span style="color:#34d399;">Upgrade</span></div>
+          <br>
+          <div style="color:#64748b;">// 连接建立！双向通信开始</div>
+          <div style="color:#fbbf24;">WS ↔ 全双工通信通道已就绪</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 特性卡片 -->
+  <h2 style="font-size:1.5rem; font-weight:700; color:#1e1b4b; margin-bottom:1.5rem;">
+    🚀 WebSocket 的核心特性
+  </h2>
+  <div class="features" style="padding-top:0;">
+    <div class="feature-card">
+      <div class="feature-icon">🔄</div>
+      <h3>全双工通信</h3>
+      <p>客户端和服务器可以<strong>同时</strong>互相发送数据，不需要等待对方响应，就像打电话一样。</p>
+    </div>
+    <div class="feature-card" style="border-top-color:#10b981;">
+      <div class="feature-icon">⚡</div>
+      <h3>低延迟</h3>
+      <p>连接建立后，数据帧的开销极小（仅 2~10 字节），相比 HTTP 请求的几百字节头部，效率大幅提升。</p>
+    </div>
+    <div class="feature-card" style="border-top-color:#f59e0b;">
+      <div class="feature-icon">🔗</div>
+      <h3>持久连接</h3>
+      <p>连接一次建立就保持，无需为每条消息重新握手，节省了大量的连接建立时间。</p>
+    </div>
+    <div class="feature-card" style="border-top-color:#ef4444;">
+      <div class="feature-icon">📡</div>
+      <h3>服务器推送</h3>
+      <p>服务器可以<strong>主动</strong>向客户端推送数据，无需客户端轮询请求，实时性极佳。</p>
+    </div>
+  </div>
+
+  <!-- 协议对比表 -->
+  <h2 style="font-size:1.5rem; font-weight:700; color:#1e1b4b; margin-bottom:1.5rem;">
+    📊 WebSocket vs 其他协议
+  </h2>
+  <div class="card" style="margin-bottom:2rem;">
+    <div class="card-body" style="padding:0; overflow-x:auto;">
+      <table class="compare-table">
+        <thead>
+          <tr>
+            <th>特性</th>
+            <th>WebSocket</th>
+            <th>HTTP 短轮询</th>
+            <th>HTTP 长轮询</th>
+            <th>SSE（服务器推送事件）</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>通信方向</td>
+            <td><span class="tag tag-green">全双工 ↔</span></td>
+            <td><span class="tag tag-yellow">半双工 ↑</span></td>
+            <td><span class="tag tag-yellow">半双工 ↑</span></td>
+            <td><span class="tag tag-blue">单向 ↓（服务器→客户端）</span></td>
+          </tr>
+          <tr>
+            <td>连接方式</td>
+            <td><span class="tag tag-green">持久连接</span></td>
+            <td><span class="tag tag-red">每次新建连接</span></td>
+            <td><span class="tag tag-yellow">保持连接等待</span></td>
+            <td><span class="tag tag-green">持久连接</span></td>
+          </tr>
+          <tr>
+            <td>服务器推送</td>
+            <td><span class="tag tag-green">✅ 支持</span></td>
+            <td><span class="tag tag-red">❌ 不支持</span></td>
+            <td><span class="tag tag-yellow">⚠️ 间接支持</span></td>
+            <td><span class="tag tag-green">✅ 支持</span></td>
+          </tr>
+          <tr>
+            <td>消息延迟</td>
+            <td><span class="tag tag-green">极低（毫秒级）</span></td>
+            <td><span class="tag tag-red">高（取决于轮询间隔）</span></td>
+            <td><span class="tag tag-yellow">中等</span></td>
+            <td><span class="tag tag-green">低</span></td>
+          </tr>
+          <tr>
+            <td>带宽消耗</td>
+            <td><span class="tag tag-green">低（帧头极小）</span></td>
+            <td><span class="tag tag-red">高（HTTP 头每次重复）</span></td>
+            <td><span class="tag tag-yellow">中等</span></td>
+            <td><span class="tag tag-blue">中等</span></td>
+          </tr>
+          <tr>
+            <td>协议升级</td>
+            <td><span class="tag tag-green">HTTP → WS</span></td>
+            <td><span class="tag tag-blue">纯 HTTP</span></td>
+            <td><span class="tag tag-blue">纯 HTTP</span></td>
+            <td><span class="tag tag-blue">HTTP + EventStream</span></td>
+          </tr>
+          <tr>
+            <td>典型场景</td>
+            <td>聊天、游戏、实时协作</td>
+            <td>偶发性数据更新</td>
+            <td>消息通知</td>
+            <td>新闻推送、进度更新</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- 使用场景 -->
+  <h2 style="font-size:1.5rem; font-weight:700; color:#1e1b4b; margin-bottom:1.5rem;">
+    💡 WebSocket 的典型使用场景
+  </h2>
+  <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:1rem; margin-bottom:3rem;">
+    <div style="background:white;border-radius:10px;padding:1.25rem;box-shadow:0 1px 3px rgba(0,0,0,0.08);text-align:center;">
+      <div style="font-size:2rem;">💬</div>
+      <div style="font-weight:600; margin-top:0.5rem;">即时聊天</div>
+      <div style="font-size:0.8rem;color:#6b7280;margin-top:0.3rem;">微信、Slack、Discord</div>
+    </div>
+    <div style="background:white;border-radius:10px;padding:1.25rem;box-shadow:0 1px 3px rgba(0,0,0,0.08);text-align:center;">
+      <div style="font-size:2rem;">🎮</div>
+      <div style="font-weight:600; margin-top:0.5rem;">多人游戏</div>
+      <div style="font-size:0.8rem;color:#6b7280;margin-top:0.3rem;">实时同步游戏状态</div>
+    </div>
+    <div style="background:white;border-radius:10px;padding:1.25rem;box-shadow:0 1px 3px rgba(0,0,0,0.08);text-align:center;">
+      <div style="font-size:2rem;">📈</div>
+      <div style="font-weight:600; margin-top:0.5rem;">实时行情</div>
+      <div style="font-size:0.8rem;color:#6b7280;margin-top:0.3rem;">股票、加密货币价格</div>
+    </div>
+    <div style="background:white;border-radius:10px;padding:1.25rem;box-shadow:0 1px 3px rgba(0,0,0,0.08);text-align:center;">
+      <div style="font-size:2rem;">📝</div>
+      <div style="font-weight:600; margin-top:0.5rem;">协同编辑</div>
+      <div style="font-size:0.8rem;color:#6b7280;margin-top:0.3rem;">Google Docs、Figma</div>
+    </div>
+    <div style="background:white;border-radius:10px;padding:1.25rem;box-shadow:0 1px 3px rgba(0,0,0,0.08);text-align:center;">
+      <div style="font-size:2rem;">🔔</div>
+      <div style="font-weight:600; margin-top:0.5rem;">实时通知</div>
+      <div style="font-size:0.8rem;color:#6b7280;margin-top:0.3rem;">推送提醒、告警</div>
+    </div>
+    <div style="background:white;border-radius:10px;padding:1.25rem;box-shadow:0 1px 3px rgba(0,0,0,0.08);text-align:center;">
+      <div style="font-size:2rem;">🤖</div>
+      <div style="font-weight:600; margin-top:0.5rem;">AI 流式回复</div>
+      <div style="font-size:0.8rem;color:#6b7280;margin-top:0.3rem;">ChatGPT 逐字输出</div>
+    </div>
+  </div>
+
+</div>
+
+</body>
+</html>

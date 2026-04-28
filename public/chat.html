@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>WebSocket 聊天室 Demo</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+
+<!-- 导航栏 -->
+<nav class="navbar">
+  <span class="logo">⚡ WebSocket Demo</span>
+  <a href="/">首页</a>
+  <a href="/chat.html" class="active">聊天室</a>
+  <a href="/comparison.html">协议对比</a>
+</nav>
+
+<div class="container">
+  <h2 style="font-size:1.4rem; font-weight:700; color:#1e1b4b; margin-bottom:0.5rem;">
+    💬 WebSocket 实时聊天室
+  </h2>
+  <p style="color:#6b7280; margin-bottom:1.5rem; font-size:0.9rem;">
+    打开多个浏览器窗口/标签页访问此页面，体验 WebSocket 实时广播消息的效果。
+  </p>
+
+  <div style="display:grid; grid-template-columns:1fr 320px; gap:1.5rem;">
+
+    <!-- 聊天主区域 -->
+    <div class="card">
+      <div class="card-header">
+        <span style="font-size:1.2rem;">💬</span>
+        <span class="card-title">聊天室</span>
+        <div id="connBadge" class="badge disconnected" style="margin-left:auto;">
+          <span class="dot pulse"></span>
+          <span>未连接</span>
+        </div>
+      </div>
+
+      <!-- 消息展示区 -->
+      <div id="chatArea" class="chat-area" style="border-bottom:1px solid #e5e7eb;">
+        <div class="msg system">
+          <div class="msg-bubble">点击"连接"按钮开始体验 WebSocket 实时聊天</div>
+        </div>
+      </div>
+
+      <!-- 输入区 -->
+      <div style="padding:1rem;">
+        <div class="input-row">
+          <input
+            id="msgInput"
+            type="text"
+            placeholder="输入消息，按 Enter 发送..."
+            disabled
+            maxlength="200"
+          />
+          <button id="sendBtn" class="btn btn-primary" disabled>发送</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 侧边栏 -->
+    <div style="display:flex; flex-direction:column; gap:1rem;">
+
+      <!-- 连接控制 -->
+      <div class="card">
+        <div class="card-header">
+          <span>🔌</span>
+          <span class="card-title">连接控制</span>
+        </div>
+        <div class="card-body" style="display:flex; flex-direction:column; gap:0.75rem;">
+          <button id="connectBtn" class="btn btn-success" onclick="connectWS()">
+            🔗 连接 WebSocket
+          </button>
+          <button id="disconnectBtn" class="btn btn-danger" onclick="disconnectWS()" disabled>
+            ✂️ 断开连接
+          </button>
+          <div style="font-size:0.8rem; color:#6b7280;">
+            <div>服务器：<code style="background:#f1f5f9;padding:1px 4px;border-radius:3px;">ws://localhost:3000</code></div>
+            <div id="myId" style="margin-top:0.3rem; color:#4f46e5;"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 统计信息 -->
+      <div class="card">
+        <div class="card-header">
+          <span>📊</span>
+          <span class="card-title">实时统计</span>
+        </div>
+        <div class="card-body">
+          <div class="stat-grid">
+            <div class="stat-item">
+              <div id="statOnline" class="stat-value" style="color:#10b981;">0</div>
+              <div class="stat-label">在线人数</div>
+            </div>
+            <div class="stat-item">
+              <div id="statMsgs" class="stat-value" style="color:#4f46e5;">0</div>
+              <div class="stat-label">消息总数</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 服务器推送日志 -->
+      <div class="card" style="flex:1;">
+        <div class="card-header">
+          <span>📡</span>
+          <span class="card-title">服务器主动推送</span>
+        </div>
+        <div class="card-body" style="padding:0.75rem;">
+          <p style="font-size:0.8rem; color:#6b7280; margin-bottom:0.5rem;">
+            连接后，服务器每秒自动推送时间（无需你请求）：
+          </p>
+          <div id="pushLog" class="log-area" style="height:180px;">
+            <div class="log-line type-system">等待连接...</div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- 原理说明 -->
+  <div class="card" style="margin-top:1.5rem;">
+    <div class="card-header">
+      <span>💡</span>
+      <span class="card-title">WebSocket 聊天室工作原理</span>
+    </div>
+    <div class="card-body">
+      <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:1rem; font-size:0.88rem; color:#475569;">
+        <div>
+          <strong style="color:#4f46e5;">1. 建立连接</strong>
+          <p style="margin-top:0.3rem;">客户端调用 <code style="background:#f1f5f9;padding:1px 4px;border-radius:3px;">new WebSocket(url)</code>，发起 HTTP Upgrade 握手，升级为 WS 协议。</p>
+        </div>
+        <div>
+          <strong style="color:#10b981;">2. 发送消息</strong>
+          <p style="margin-top:0.3rem;">调用 <code style="background:#f1f5f9;padding:1px 4px;border-radius:3px;">ws.send(data)</code> 即可发送。服务器收到后广播给所有在线客户端。</p>
+        </div>
+        <div>
+          <strong style="color:#f59e0b;">3. 接收消息</strong>
+          <p style="margin-top:0.3rem;">监听 <code style="background:#f1f5f9;padding:1px 4px;border-radius:3px;">ws.onmessage</code> 事件，服务器主动推送时自动触发，无需轮询。</p>
+        </div>
+        <div>
+          <strong style="color:#ef4444;">4. 断开连接</strong>
+          <p style="margin-top:0.3rem;">调用 <code style="background:#f1f5f9;padding:1px 4px;border-radius:3px;">ws.close()</code> 断开，服务器会通知其他用户。</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+  let ws = null;
+  let myClientId = null;
+
+  function connectWS() {
+    const wsUrl = `ws://${location.host}`;
+    ws = new WebSocket(wsUrl);
+
+    updateBadge('connecting');
+    document.getElementById('connectBtn').disabled = true;
+    document.getElementById('disconnectBtn').disabled = true;
+
+    ws.onopen = () => {
+      updateBadge('connected');
+      document.getElementById('connectBtn').disabled = true;
+      document.getElementById('disconnectBtn').disabled = false;
+      document.getElementById('msgInput').disabled = false;
+      document.getElementById('sendBtn').disabled = false;
+      appendPushLog('✅ WebSocket 连接成功！', 'type-system');
+    };
+
+    ws.onmessage = (event) => {
+      const data = JSON.parse(event.data);
+      handleMessage(data);
+    };
+
+    ws.onclose = () => {
+      updateBadge('disconnected');
+      document.getElementById('connectBtn').disabled = false;
+      document.getElementById('disconnectBtn').disabled = true;
+      document.getElementById('msgInput').disabled = true;
+      document.getElementById('sendBtn').disabled = true;
+      appendPushLog('🔴 连接已断开', 'type-error');
+      appendSystemMsg('连接已断开');
+    };
+
+    ws.onerror = () => {
+      appendPushLog('❌ 连接错误，请确认服务器已启动', 'type-error');
+    };
+  }
+
+  function disconnectWS() {
+    if (ws) ws.close();
+  }
+
+  function sendMessage() {
+    const input = document.getElementById('msgInput');
+    const text = input.value.trim();
+    if (!text || !ws || ws.readyState !== WebSocket.OPEN) return;
+    ws.send(JSON.stringify({ text }));
+    input.value = '';
+  }
+
+  function handleMessage(data) {
+    if (data.type === 'welcome') {
+      myClientId = data.clientId;
+      document.getElementById('myId').textContent = `你的 ID：${data.clientId}`;
+      appendSystemMsg(`欢迎！你的 ID：${data.clientId}`);
+    } else if (data.type === 'chat') {
+      appendChatMsg(data);
+      document.getElementById('statMsgs').textContent = data.totalMessages;
+    } else if (data.type === 'user-joined') {
+      appendSystemMsg(data.message);
+      document.getElementById('statOnline').textContent = data.connections;
+    } else if (data.type === 'user-left') {
+      appendSystemMsg(data.message);
+      document.getElementById('statOnline').textContent = data.connections;
+    } else if (data.type === 'server-push') {
+      document.getElementById('statOnline').textContent = data.connections;
+      appendPushLog(
+        `[${data.time}] 服务器推送 → 当前 ${data.connections} 人在线`,
+        'type-server'
+      );
+    }
+  }
+
+  function appendChatMsg(data) {
+    const area = document.getElementById('chatArea');
+    const div = document.createElement('div');
+    const isMine = data.clientId === myClientId;
+    div.className = `msg ${isMine ? 'mine' : 'theirs'}`;
+
+    const bubble = document.createElement('div');
+    bubble.className = 'msg-bubble';
+    bubble.textContent = data.text;
+
+    const meta = document.createElement('div');
+    meta.className = 'msg-meta';
+    meta.textContent = `${isMine ? '我' : data.clientId} · ${data.time}`;
+
+    div.appendChild(bubble);
+    div.appendChild(meta);
+    area.appendChild(div);
+    area.scrollTop = area.scrollHeight;
+  }
+
+  function appendSystemMsg(text) {
+    const area = document.getElementById('chatArea');
+    const div = document.createElement('div');
+    div.className = 'msg system';
+    div.innerHTML = `<div class="msg-bubble">${escHtml(text)}</div>`;
+    area.appendChild(div);
+    area.scrollTop = area.scrollHeight;
+  }
+
+  function appendPushLog(text, cls) {
+    const log = document.getElementById('pushLog');
+    const line = document.createElement('div');
+    line.className = `log-line ${cls}`;
+    line.textContent = text;
+    log.appendChild(line);
+    log.scrollTop = log.scrollHeight;
+    // 只保留最近 50 条
+    while (log.children.length > 50) log.removeChild(log.firstChild);
+  }
+
+  function updateBadge(state) {
+    const badge = document.getElementById('connBadge');
+    const labels = { connected: '已连接', disconnected: '未连接', connecting: '连接中...' };
+    badge.className = `badge ${state}`;
+    badge.innerHTML = `<span class="dot pulse"></span><span>${labels[state]}</span>`;
+  }
+
+  function escHtml(text) {
+    return text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  }
+
+  // Enter 键发送
+  document.getElementById('msgInput').addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') sendMessage();
+  });
+  document.getElementById('sendBtn').addEventListener('click', sendMessage);
+</script>
+
+</body>
+</html>

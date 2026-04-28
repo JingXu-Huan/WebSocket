@@ -1,0 +1,507 @@
+/* ===== WebSocket Demo - 共享样式 ===== */
+
+:root {
+  --primary: #4f46e5;
+  --primary-light: #6366f1;
+  --success: #10b981;
+  --warning: #f59e0b;
+  --danger: #ef4444;
+  --dark: #1e1b4b;
+  --gray: #6b7280;
+  --light-gray: #f3f4f6;
+  --border: #e5e7eb;
+  --ws-color: #10b981;
+  --http-color: #f59e0b;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', system-ui, sans-serif;
+  background: #f8fafc;
+  color: #334155;
+  line-height: 1.6;
+}
+
+/* ── 导航栏 ── */
+.navbar {
+  background: linear-gradient(135deg, var(--dark) 0%, var(--primary) 100%);
+  color: white;
+  padding: 0 2rem;
+  display: flex;
+  align-items: center;
+  gap: 2rem;
+  height: 60px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+}
+
+.navbar .logo {
+  font-size: 1.2rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.navbar a {
+  color: rgba(255,255,255,0.85);
+  text-decoration: none;
+  padding: 0.4rem 0.8rem;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  transition: background 0.2s;
+}
+
+.navbar a:hover,
+.navbar a.active {
+  background: rgba(255,255,255,0.2);
+  color: white;
+}
+
+/* ── 容器 ── */
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 2rem 1.5rem;
+}
+
+/* ── 卡片 ── */
+.card {
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1), 0 1px 2px rgba(0,0,0,0.06);
+  overflow: hidden;
+}
+
+.card-header {
+  padding: 1rem 1.5rem;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.card-title {
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.card-body {
+  padding: 1.5rem;
+}
+
+/* ── 状态徽章 ── */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.2rem 0.6rem;
+  border-radius: 99px;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.badge.connected {
+  background: #d1fae5;
+  color: #065f46;
+}
+
+.badge.disconnected {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.badge.connecting {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+/* ── 点状指示器 ── */
+.dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.dot.pulse {
+  animation: pulse 1.5s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.3; }
+}
+
+/* ── 日志/消息区域 ── */
+.log-area {
+  height: 320px;
+  overflow-y: auto;
+  background: #0f172a;
+  border-radius: 8px;
+  padding: 1rem;
+  font-family: 'Consolas', 'Monaco', monospace;
+  font-size: 0.82rem;
+}
+
+.log-area::-webkit-scrollbar {
+  width: 6px;
+}
+
+.log-area::-webkit-scrollbar-track {
+  background: #1e293b;
+}
+
+.log-area::-webkit-scrollbar-thumb {
+  background: #475569;
+  border-radius: 3px;
+}
+
+.log-line {
+  padding: 2px 0;
+  border-bottom: 1px solid rgba(255,255,255,0.04);
+}
+
+.log-line .time {
+  color: #64748b;
+  margin-right: 0.5rem;
+}
+
+.log-line.type-server { color: #34d399; }
+.log-line.type-client { color: #60a5fa; }
+.log-line.type-system { color: #a78bfa; }
+.log-line.type-error  { color: #f87171; }
+.log-line.type-http   { color: #fbbf24; }
+
+/* ── 聊天消息 ── */
+.chat-area {
+  height: 360px;
+  overflow-y: auto;
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.chat-area::-webkit-scrollbar { width: 5px; }
+.chat-area::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
+
+.msg {
+  display: flex;
+  flex-direction: column;
+  max-width: 75%;
+}
+
+.msg.mine {
+  align-self: flex-end;
+  align-items: flex-end;
+}
+
+.msg.theirs {
+  align-self: flex-start;
+}
+
+.msg.system {
+  align-self: center;
+  max-width: 90%;
+}
+
+.msg-bubble {
+  padding: 0.5rem 0.9rem;
+  border-radius: 16px;
+  font-size: 0.9rem;
+  word-break: break-word;
+}
+
+.msg.mine .msg-bubble {
+  background: var(--primary);
+  color: white;
+  border-bottom-right-radius: 4px;
+}
+
+.msg.theirs .msg-bubble {
+  background: var(--light-gray);
+  color: #334155;
+  border-bottom-left-radius: 4px;
+}
+
+.msg.system .msg-bubble {
+  background: #f1f5f9;
+  color: #64748b;
+  font-size: 0.8rem;
+  border-radius: 8px;
+  text-align: center;
+}
+
+.msg-meta {
+  font-size: 0.72rem;
+  color: var(--gray);
+  margin-top: 2px;
+  padding: 0 4px;
+}
+
+/* ── 输入区 ── */
+.input-row {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.input-row input {
+  flex: 1;
+  padding: 0.6rem 1rem;
+  border: 1.5px solid var(--border);
+  border-radius: 8px;
+  font-size: 0.9rem;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.input-row input:focus {
+  border-color: var(--primary-light);
+}
+
+/* ── 按钮 ── */
+.btn {
+  padding: 0.6rem 1.2rem;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-primary {
+  background: var(--primary);
+  color: white;
+}
+
+.btn-primary:hover {
+  background: var(--primary-light);
+}
+
+.btn-primary:disabled {
+  background: #94a3b8;
+  cursor: not-allowed;
+}
+
+.btn-success {
+  background: var(--success);
+  color: white;
+}
+
+.btn-success:hover {
+  background: #059669;
+}
+
+.btn-danger {
+  background: var(--danger);
+  color: white;
+}
+
+.btn-danger:hover {
+  background: #dc2626;
+}
+
+.btn-outline {
+  background: white;
+  color: var(--primary);
+  border: 1.5px solid var(--primary);
+}
+
+.btn-outline:hover {
+  background: var(--primary);
+  color: white;
+}
+
+/* ── 统计计数器 ── */
+.stat-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 1rem;
+}
+
+.stat-item {
+  text-align: center;
+  padding: 1rem;
+  border-radius: 10px;
+  background: var(--light-gray);
+}
+
+.stat-value {
+  font-size: 2rem;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.stat-label {
+  font-size: 0.75rem;
+  color: var(--gray);
+  margin-top: 0.3rem;
+}
+
+/* ── 对比布局 ── */
+.compare-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.5rem;
+}
+
+@media (max-width: 768px) {
+  .compare-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.panel-ws .card-header { background: #ecfdf5; border-color: #a7f3d0; }
+.panel-ws .card-title  { color: #065f46; }
+.panel-http .card-header { background: #fffbeb; border-color: #fde68a; }
+.panel-http .card-title  { color: #78350f; }
+
+/* ── 进度/延迟指示器 ── */
+.latency-bar {
+  height: 8px;
+  border-radius: 4px;
+  background: var(--light-gray);
+  overflow: hidden;
+  margin-top: 0.3rem;
+}
+
+.latency-fill {
+  height: 100%;
+  border-radius: 4px;
+  transition: width 0.3s ease;
+}
+
+/* ── Hero 区块 ── */
+.hero {
+  background: linear-gradient(135deg, var(--dark) 0%, #312e81 50%, var(--primary) 100%);
+  color: white;
+  padding: 4rem 2rem;
+  text-align: center;
+}
+
+.hero h1 {
+  font-size: 2.5rem;
+  font-weight: 800;
+  margin-bottom: 1rem;
+}
+
+.hero p {
+  font-size: 1.1rem;
+  color: rgba(255,255,255,0.8);
+  max-width: 600px;
+  margin: 0 auto 2rem;
+}
+
+.hero-links {
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.hero-links a {
+  padding: 0.75rem 1.75rem;
+  border-radius: 8px;
+  text-decoration: none;
+  font-weight: 600;
+  font-size: 1rem;
+  transition: all 0.2s;
+}
+
+.hero-links .btn-hero-primary {
+  background: white;
+  color: var(--primary);
+}
+
+.hero-links .btn-hero-primary:hover {
+  background: #e0e7ff;
+}
+
+.hero-links .btn-hero-outline {
+  border: 2px solid rgba(255,255,255,0.6);
+  color: white;
+}
+
+.hero-links .btn-hero-outline:hover {
+  background: rgba(255,255,255,0.15);
+}
+
+/* ── 特性卡片 ── */
+.features {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 1.5rem;
+  padding: 3rem 0;
+}
+
+.feature-card {
+  background: white;
+  border-radius: 12px;
+  padding: 1.5rem;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+  border-top: 4px solid var(--primary);
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.feature-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.12);
+}
+
+.feature-icon {
+  font-size: 2rem;
+  margin-bottom: 0.75rem;
+}
+
+.feature-card h3 {
+  font-size: 1rem;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+  color: var(--dark);
+}
+
+.feature-card p {
+  font-size: 0.88rem;
+  color: var(--gray);
+}
+
+/* ── 协议对比表格 ── */
+.compare-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
+
+.compare-table th,
+.compare-table td {
+  padding: 0.75rem 1rem;
+  text-align: left;
+  border-bottom: 1px solid var(--border);
+}
+
+.compare-table th {
+  background: var(--light-gray);
+  font-weight: 600;
+  color: var(--dark);
+}
+
+.compare-table tr:hover td {
+  background: #f8fafc;
+}
+
+.tag {
+  display: inline-block;
+  padding: 0.15rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.tag-green  { background: #d1fae5; color: #065f46; }
+.tag-yellow { background: #fef3c7; color: #78350f; }
+.tag-red    { background: #fee2e2; color: #991b1b; }
+.tag-blue   { background: #dbeafe; color: #1e40af; }
