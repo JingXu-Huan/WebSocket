@@ -48,9 +48,20 @@ const server = http.createServer((req, res) => {
     return;
   }
 
-  // 静态文件服务
-  let filePath = path.join(__dirname, 'public',
-    req.url === '/' ? 'index.html' : req.url);
+  // 静态文件服务（防止路径遍历攻击）
+  const publicDir = path.join(__dirname, 'public');
+  // 解析 URL 路径（去掉查询参数），并去掉开头的 /
+  const urlPathname = new URL(req.url, 'http://localhost').pathname;
+  const relativePath = urlPathname === '/' ? 'index.html' : urlPathname.slice(1);
+  // 规范化路径并解析到 publicDir 下
+  const filePath = path.resolve(publicDir, path.normalize(relativePath));
+
+  // 确保解析后的路径在 public 目录内，防止路径遍历攻击
+  if (!filePath.startsWith(publicDir + path.sep) && filePath !== publicDir) {
+    res.writeHead(403, { 'Content-Type': 'text/plain' });
+    res.end('403 Forbidden');
+    return;
+  }
 
   const ext = path.extname(filePath);
   const mimeTypes = {
@@ -161,12 +172,11 @@ wss.on('connection', (ws, req) => {
 // ─── 启动服务器 ───────────────────────────────────────────────────────────────
 server.listen(PORT, () => {
   console.log('');
-  console.log('╔══════════════════════════════════════════════════╗');
-  console.log('║         WebSocket Demo 服务器已启动              ║');
-  console.log('╠══════════════════════════════════════════════════╣');
-  console.log(`║  主页:       http://localhost:${PORT}               ║`);
-  console.log(`║  聊天室:     http://localhost:${PORT}/chat.html      ║`);
-  console.log(`║  对比演示:   http://localhost:${PORT}/comparison.html║`);
-  console.log('╚══════════════════════════════════════════════════╝');
+  console.log('  WebSocket Demo 服务器已启动');
+  console.log('  ─────────────────────────────────────────────');
+  console.log(`  主页:       http://localhost:${PORT}`);
+  console.log(`  聊天室:     http://localhost:${PORT}/chat.html`);
+  console.log(`  对比演示:   http://localhost:${PORT}/comparison.html`);
+  console.log('  ─────────────────────────────────────────────');
   console.log('');
 });

@@ -232,10 +232,17 @@
     const div = document.createElement('div');
     const isMine = data.clientId === myClientId;
     div.className = `msg ${isMine ? 'mine' : 'theirs'}`;
-    div.innerHTML = `
-      <div class="msg-bubble">${escHtml(data.text)}</div>
-      <div class="msg-meta">${isMine ? '我' : data.clientId} · ${data.time}</div>
-    `;
+
+    const bubble = document.createElement('div');
+    bubble.className = 'msg-bubble';
+    bubble.textContent = data.text;
+
+    const meta = document.createElement('div');
+    meta.className = 'msg-meta';
+    meta.textContent = `${isMine ? '我' : data.clientId} · ${data.time}`;
+
+    div.appendChild(bubble);
+    div.appendChild(meta);
     area.appendChild(div);
     area.scrollTop = area.scrollHeight;
   }
